@@ -13,7 +13,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.neoforged.neoforge.registries.DeferredHolder;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -82,18 +81,14 @@ public class EnhancedModelProvider extends ModelProvider
             this.genModel(modelLocation, textureMapping, modelTemplate);
         }
 
+        @SuppressWarnings("all")
         public static class Generator implements Generators.Init, Generators.Impl
         {
             private final ClientItemModelGenerators genRef;
-            @Nullable
             private ResourceLocation id;
-            @Nullable
             private ResourceLocation modelResourceLocation;
-            @Nullable
             private TextureMapping textureMapping;
-            @Nullable
             private ModelTemplate modelTemplate;
-            @Nullable
             private ClientItem clientItem;
 
             public Generator(ClientItemModelGenerators genRef) {
@@ -193,6 +188,7 @@ public class EnhancedModelProvider extends ModelProvider
             }
         }
 
+        @SuppressWarnings("all")
         public static class ClientItemBuilder
         {
             @Nonnull
