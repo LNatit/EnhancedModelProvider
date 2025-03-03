@@ -201,20 +201,24 @@ public class EnhancedModelProvider extends ModelProvider
                 this.modelResourceLocation = modelResourceLocation;
             }
 
-            public void withModel(ResourceLocation modelResourceLocation) {
+            public ClientItemBuilder withModel(ResourceLocation modelResourceLocation) {
                 this.modelResourceLocation = modelResourceLocation;
+                return this;
             }
 
-            public void withUnbakedGen(Function<ResourceLocation, ItemModel.Unbaked> unbakedGen) {
+            public ClientItemBuilder withUnbakedGen(Function<ResourceLocation, ItemModel.Unbaked> unbakedGen) {
                 this.unbakedGen = unbakedGen;
+                return this;
             }
 
-            public void withUnbaked(ItemModel.Unbaked unbaked) {
+            public ClientItemBuilder withUnbaked(ItemModel.Unbaked unbaked) {
                 this.unbaked = unbaked;
+                return this;
             }
 
-            public void withProperties(ClientItem.Properties properties) {
+            public ClientItemBuilder withProperties(ClientItem.Properties properties) {
                 this.properties = properties;
+                return this;
             }
 
             public ClientItem build() {
