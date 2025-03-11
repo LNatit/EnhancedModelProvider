@@ -15,7 +15,8 @@ Others are all the same as [NeoForged doc](https://docs.neoforged.net/docs/resou
 ## Examples
 
 ```java
-// In your own ModModelProvider extends EnhancedModelProvider #registerModels(BlockModelGenerators, ItemModelGenerators, ClientItemModelGenerators)
+// In your own ModModelProvider extends EnhancedModelProvider
+// somewhere in #registerModels(BlockModelGenerators, ItemModelGenerators, ClientItemModelGenerators)
 // with DeferredItem SOME_ITEM
 // vanilla ways
 itemModels.generateFlatItem(SOME_ITEM.get(), ModelTemplates.FLAT_ITEM);
