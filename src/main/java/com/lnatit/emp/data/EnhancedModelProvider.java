@@ -42,6 +42,19 @@ public class EnhancedModelProvider extends ModelProvider
     protected void registerModels(BlockModelGenerators blockModels, ItemModelGenerators itemModels, ClientItemModelGenerators clientItemModels) {
     }
 
+    /**
+     * Disable registry checks
+     */ 
+    @Override
+    protected Stream<? extends Holder<Block>> getKnownBlocks() {
+        return Stream.of();
+    }
+
+    @Override
+    protected Stream<? extends Holder<Item>> getKnownItems() {
+        return Stream.of();
+    }
+    
     @Override
     public CompletableFuture<?> run(CachedOutput output) {
         // No validation needed maybe
