@@ -6,10 +6,13 @@ import net.minecraft.client.data.models.ModelProvider;
 import net.minecraft.client.data.models.model.*;
 import net.minecraft.client.renderer.item.ClientItem;
 import net.minecraft.client.renderer.item.ItemModel;
+import net.minecraft.core.Holder;
 import net.minecraft.data.CachedOutput;
 import net.minecraft.data.DataProvider;
 import net.minecraft.data.PackOutput;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.level.block.Block;
 import net.neoforged.neoforge.registries.DeferredHolder;
 
 import javax.annotation.Nonnull;
@@ -18,6 +21,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 public class EnhancedModelProvider extends ModelProvider
 {
