@@ -29,8 +29,8 @@ clientItemModels.gen().withId(id).all();
 clientItemModels.gen().withId(ANY_REGITSTRY).all();
 
 // if only clientItem or itemModel needed, you can call
-clientItemModels.gen.withId(SOME_ITEM).clientItemOnly();
-clientItemModels.gen.withId(SOME_ITEM).modelOnly();
+clientItemModels.gen().withId(SOME_ITEM).clientItemOnly();
+clientItemModels.gen().withId(SOME_ITEM).modelOnly();
 
 // More complex definitions are supported
 // with ResourceLocation modelLocation, layerLocation
