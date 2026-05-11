@@ -6,11 +6,12 @@ import net.minecraft.client.data.models.ModelProvider;
 import net.minecraft.client.data.models.model.*;
 import net.minecraft.client.renderer.item.ClientItem;
 import net.minecraft.client.renderer.item.ItemModel;
+import net.minecraft.client.resources.model.sprite.Material;
 import net.minecraft.core.Holder;
 import net.minecraft.data.CachedOutput;
 import net.minecraft.data.DataProvider;
 import net.minecraft.data.PackOutput;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import net.neoforged.neoforge.registries.DeferredHolder;
@@ -43,12 +44,16 @@ public class EnhancedModelProvider extends ModelProvider
         registerModels(blockModels, itemModels, new ClientItemModelGenerators(this.clientItemCollector, itemModels));
     }
 
-    protected void registerModels(BlockModelGenerators blockModels, ItemModelGenerators itemModels, ClientItemModelGenerators clientItemModels) {
+    protected void registerModels(
+            BlockModelGenerators blockModels,
+            ItemModelGenerators itemModels,
+            ClientItemModelGenerators clientItemModels
+    ) {
     }
 
     /**
      * Disable registry checks
-     */ 
+     */
     @Override
     protected Stream<? extends Holder<Block>> getKnownBlocks() {
         return Stream.of();
@@ -58,23 +63,24 @@ public class EnhancedModelProvider extends ModelProvider
     protected Stream<? extends Holder<Item>> getKnownItems() {
         return Stream.of();
     }
-    
+
     @Override
     public CompletableFuture<?> run(CachedOutput output) {
         // No validation needed maybe
-        return CompletableFuture.allOf(super.run(output), this.clientItemCollector.save(output, this.itemInfoPathProvider));
+        return CompletableFuture.allOf(super.run(output),
+                                       this.clientItemCollector.save(output, this.itemInfoPathProvider));
     }
 
     /**
-     * <li>Models: ResourceLocation(ModelLocation), TextureMapping & ModelTemplate
-     * <li>ClientItems: ResourceLocation(RegistryId) & ClientItem
+     * <li>Models: Identifier(ModelLocation), TextureMapping & ModelTemplate
+     * <li>ClientItems: Identifier(RegistryId) & ClientItem
      * <p>
      * For mostly clientItems {@code ModelLocation = RegistryId.withSuffix("item/");}
      */
     public static class ClientItemModelGenerators
     {
         public final ClientItemCollector clientItemOutput;
-        public final BiConsumer<ResourceLocation, ModelInstance> modelOutput;
+        public final BiConsumer<Identifier, ModelInstance> modelOutput;
 
         public ClientItemModelGenerators(ClientItemCollector clientItemOutput, ItemModelGenerators template) {
             this.clientItemOutput = clientItemOutput;
@@ -85,15 +91,21 @@ public class EnhancedModelProvider extends ModelProvider
             return new Generator(this);
         }
 
-        public void genClientItem(ResourceLocation registryId, ClientItem clientItem) {
+        public void genClientItem(Identifier registryId, ClientItem clientItem) {
             this.clientItemOutput.accept(registryId, clientItem);
         }
 
-        public void genModel(ResourceLocation modelLocation, TextureMapping textureMapping, ModelTemplate modelTemplate) {
+        public void genModel(Identifier modelLocation, TextureMapping textureMapping, ModelTemplate modelTemplate) {
             modelTemplate.create(modelLocation, textureMapping, this.modelOutput);
         }
 
-        public void generate(ResourceLocation registryId, ClientItem clientItem, ResourceLocation modelLocation, TextureMapping textureMapping, ModelTemplate modelTemplate) {
+        public void generate(
+                Identifier registryId,
+                ClientItem clientItem,
+                Identifier modelLocation,
+                TextureMapping textureMapping,
+                ModelTemplate modelTemplate
+        ) {
             this.genClientItem(registryId, clientItem);
             this.genModel(modelLocation, textureMapping, modelTemplate);
         }
@@ -102,8 +114,8 @@ public class EnhancedModelProvider extends ModelProvider
         public static class Generator implements Generators.Init, Generators.Impl
         {
             private final ClientItemModelGenerators genRef;
-            private ResourceLocation id;
-            private ResourceLocation modelResourceLocation;
+            private Identifier id;
+            private Identifier modelIdentifier;
             private TextureMapping textureMapping;
             private ModelTemplate modelTemplate;
             private ClientItem clientItem;
@@ -113,14 +125,14 @@ public class EnhancedModelProvider extends ModelProvider
             }
 
             @Override
-            public Generators.Impl withId(ResourceLocation id) {
+            public Generators.Impl withId(Identifier id) {
                 this.id = id;
                 return this;
             }
 
             @Override
-            public Generators.Impl withModel(ResourceLocation modelResourceLocation) {
-                this.modelResourceLocation = modelResourceLocation;
+            public Generators.Impl withModel(Identifier modelIdentifier) {
+                this.modelIdentifier = modelIdentifier;
                 return this;
             }
 
@@ -143,18 +155,20 @@ public class EnhancedModelProvider extends ModelProvider
             }
 
             @Override
-            public ResourceLocation getId() {
+            public Identifier getId() {
                 return this.id;
             }
 
             @Override
-            public ResourceLocation getModelResourceLocation() {
-                return this.modelResourceLocation == null ? Generators.getDefaultModel(this.id) : this.modelResourceLocation;
+            public Identifier getModelIdentifier() {
+                return this.modelIdentifier == null ? Generators.getDefaultModel(this.id) : this.modelIdentifier;
             }
 
             @Override
             public TextureMapping getTextureMapping() {
-                return this.textureMapping == null ? TextureMapping.layer0(this.getModelResourceLocation()) : this.textureMapping;
+                return this.textureMapping == null
+                       ? TextureMapping.layer0(new Material(this.getModelIdentifier()))
+                       : this.textureMapping;
             }
 
             @Override
@@ -164,7 +178,7 @@ public class EnhancedModelProvider extends ModelProvider
 
             @Override
             public ClientItemBuilder getClientItemBuilder() {
-                return new ClientItemBuilder(this.getModelResourceLocation());
+                return new ClientItemBuilder(this.getModelIdentifier());
             }
 
             @Override
@@ -174,33 +188,24 @@ public class EnhancedModelProvider extends ModelProvider
 
             @Override
             public void all() {
-                this.genRef.generate(
-                        this.getId(),
-                        this.getClientItem(),
-                        this.getModelResourceLocation(),
-                        this.getTextureMapping(),
-                        this.getModelTemplate()
-                );
+                this.genRef.generate(this.getId(),
+                                     this.getClientItem(),
+                                     this.getModelIdentifier(),
+                                     this.getTextureMapping(),
+                                     this.getModelTemplate());
             }
 
             @Override
             public void modelOnly() {
-                this.genRef.genModel(
-                        this.getModelResourceLocation(),
-                        this.getTextureMapping(),
-                        this.getModelTemplate()
-                );
+                this.genRef.genModel(this.getModelIdentifier(), this.getTextureMapping(), this.getModelTemplate());
             }
 
             @Override
             public void clientItemOnly() {
-                this.genRef.genClientItem(
-                        this.getId(),
-                        this.getClientItem()
-                );
+                this.genRef.genClientItem(this.getId(), this.getClientItem());
             }
 
-            public void likeFlatItem(ResourceLocation id) {
+            public void likeFlatItem(Identifier id) {
                 this.withId(id).all();
             }
         }
@@ -209,21 +214,21 @@ public class EnhancedModelProvider extends ModelProvider
         public static class ClientItemBuilder
         {
             @Nonnull
-            private ResourceLocation modelResourceLocation;
-            private Function<ResourceLocation, ItemModel.Unbaked> unbakedGen;
+            private Identifier modelIdentifier;
+            private Function<Identifier, ItemModel.Unbaked> unbakedGen;
             private ItemModel.Unbaked unbaked;
             private ClientItem.Properties properties;
 
-            public ClientItemBuilder(ResourceLocation modelResourceLocation) {
-                this.modelResourceLocation = modelResourceLocation;
+            public ClientItemBuilder(Identifier modelIdentifier) {
+                this.modelIdentifier = modelIdentifier;
             }
 
-            public ClientItemBuilder withModel(ResourceLocation modelResourceLocation) {
-                this.modelResourceLocation = modelResourceLocation;
+            public ClientItemBuilder withModel(Identifier modelIdentifier) {
+                this.modelIdentifier = modelIdentifier;
                 return this;
             }
 
-            public ClientItemBuilder withUnbakedGen(Function<ResourceLocation, ItemModel.Unbaked> unbakedGen) {
+            public ClientItemBuilder withUnbakedGen(Function<Identifier, ItemModel.Unbaked> unbakedGen) {
                 this.unbakedGen = unbakedGen;
                 return this;
             }
@@ -243,7 +248,7 @@ public class EnhancedModelProvider extends ModelProvider
                     if (this.unbakedGen == null) {
                         this.unbakedGen = ItemModelUtils::plainModel;
                     }
-                    this.unbaked = this.unbakedGen.apply(this.modelResourceLocation);
+                    this.unbaked = this.unbakedGen.apply(this.modelIdentifier);
                 }
                 if (this.properties == null) {
                     this.properties = ClientItem.Properties.DEFAULT;
@@ -255,18 +260,18 @@ public class EnhancedModelProvider extends ModelProvider
 
         /**
          * A more nimble way to DataGen {@link ClientItem} that doesn't actually bound to a registered {@link net.minecraft.world.item.Item}.
-         * Basically you can call {@link ClientItemCollector#accept(ResourceLocation, ClientItem)} to generate,
+         * Basically you can call {@link ClientItemCollector#accept(Identifier, ClientItem)} to generate,
          * but there are also many overloads for convenient uses.
          *
          * @see ItemInfoCollector
          */
-        public static class ClientItemCollector implements BiConsumer<ResourceLocation, ClientItem>
+        public static class ClientItemCollector implements BiConsumer<Identifier, ClientItem>
         {
-            private final Map<ResourceLocation, ClientItem> clientItemInfos = new HashMap<>();
+            private final Map<Identifier, ClientItem> clientItemInfos = new HashMap<>();
 
             @Override
-            public void accept(ResourceLocation resourceLocation, ClientItem clientItem) {
-                this.clientItemInfos.put(resourceLocation, clientItem);
+            public void accept(Identifier Identifier, ClientItem clientItem) {
+                this.clientItemInfos.put(Identifier, clientItem);
             }
 
             public CompletableFuture<?> save(CachedOutput output, PackOutput.PathProvider pathProvider) {
@@ -275,15 +280,17 @@ public class EnhancedModelProvider extends ModelProvider
         }
     }
 
-    public static class Generators {
-        public static ResourceLocation getDefaultModel(ResourceLocation id) {
+    public static class Generators
+    {
+        public static Identifier getDefaultModel(Identifier id) {
             return id.withPrefix("item/");
         }
 
-        interface Acceptor {
-            ResourceLocation getId();
+        interface Acceptor
+        {
+            Identifier getId();
 
-            ResourceLocation getModelResourceLocation();
+            Identifier getModelIdentifier();
 
             TextureMapping getTextureMapping();
 
@@ -295,10 +302,11 @@ public class EnhancedModelProvider extends ModelProvider
         }
 
         /**
-         * Methods within this interface with {@code Default} in it's name will wrap the model with {@link Generators#getDefaultModel(ResourceLocation)}, the others will not.
+         * Methods within this interface with {@code Default} in it's name will wrap the model with {@link Generators#getDefaultModel(Identifier)}, the others will not.
          */
-        interface ModelAcceptor extends Acceptor {
-            Impl withModel(ResourceLocation modelResourceLocation);
+        interface ModelAcceptor extends Acceptor
+        {
+            Impl withModel(Identifier modelIdentifier);
 
             default Impl withModelPath(String modelPath) {
                 return this.withModel(this.getId().withPath(modelPath));
@@ -321,15 +329,18 @@ public class EnhancedModelProvider extends ModelProvider
             }
         }
 
-        interface TextureMappingAcceptor extends Acceptor {
+        interface TextureMappingAcceptor extends Acceptor
+        {
             Impl withTextureMapping(TextureMapping textureMapping);
         }
 
-        interface ModelTemplateAcceptor extends Acceptor {
+        interface ModelTemplateAcceptor extends Acceptor
+        {
             Impl withModelTemplate(ModelTemplate modelTemplate);
         }
 
-        interface ClientItemAcceptor extends Acceptor {
+        interface ClientItemAcceptor extends Acceptor
+        {
             Impl withClientItem(ClientItem clientItem);
 
             default Impl withClientItem(Function<ClientItemModelGenerators.ClientItemBuilder, ClientItem> clientItem) {
@@ -337,15 +348,17 @@ public class EnhancedModelProvider extends ModelProvider
             }
         }
 
-        public interface Init {
-            Impl withId(ResourceLocation id);
+        public interface Init
+        {
+            Impl withId(Identifier id);
 
             default Impl withId(DeferredHolder<?, ?> registryItem) {
                 return this.withId(registryItem.getId());
             }
         }
 
-        public interface Impl extends ModelAcceptor, TextureMappingAcceptor, ModelTemplateAcceptor, ClientItemAcceptor {
+        public interface Impl extends ModelAcceptor, TextureMappingAcceptor, ModelTemplateAcceptor, ClientItemAcceptor
+        {
             void all();
 
             void modelOnly();
@@ -357,5 +370,4 @@ public class EnhancedModelProvider extends ModelProvider
             }
         }
     }
-
 }
